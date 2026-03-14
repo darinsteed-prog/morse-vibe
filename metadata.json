@@ -1,0 +1,5 @@
+{
+  "name": "Morse Vibe",
+  "description": "Transmit Morse code messages via vibration patterns, optimized for mobile and wearable devices.",
+  "requestFramePermissions": []
+}
