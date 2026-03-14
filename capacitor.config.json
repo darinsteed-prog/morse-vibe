@@ -1,0 +1,17 @@
+{
+  "appId": "com.morsevibe.app",
+  "appName": "Morse Vibe",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "showSpinner": false
+    }
+  },
+  "ios": {
+    "contentInset": "automatic"
+  }
+}

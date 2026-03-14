@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Morse Vibe</string>
+    <string name="title_activity_main">Morse Vibe</string>
+    <string name="package_name">com.morsevibe.app</string>
+    <string name="custom_url_scheme">com.morsevibe.app</string>
+</resources>
