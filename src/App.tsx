@@ -9,6 +9,7 @@ import { ImageDecoder } from './components/ImageDecoder';
 import { QRMode } from './components/QRMode';
 import { QRDecoder } from './components/QRDecoder';
 import { MorseDecoder } from './components/MorseDecoder';
+import { RemoteTab } from './components/RemoteTab';
 import { SoundMode } from './components/SoundMode';
 import { FlashMode } from './components/FlashMode';
 import { encrypt, decrypt, generateKey } from './crypto';
@@ -361,18 +362,7 @@ export default function App() {
           {modes.map(mode => (<button key={mode} onClick={() => switchMode(mode)} className={`py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap flex-shrink-0 ${inputMode === mode ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}>{modeLabels[mode]}</button>))}
         </div>
         {inputMode === 'type' ? (<KeyboardMode text={text} setText={setText} isTransmitting={isTransmitting} clearInput={clearInput} />) : inputMode === 'tap' ? (<TelegraphMode text={text} tapSequence={tapSequence} isTransmitting={isTransmitting} handlePointerDown={handlePointerDown} handlePointerUp={handlePointerUp} clearInput={clearInput} />) : inputMode === 'img' ? (<ImageMode setText={setText} isTransmitting={isTransmitting} />) : inputMode === 'qr' ? (<QRMode setText={setText} isTransmitting={isTransmitting} />) : inputMode === 'sound' ? (<SoundMode text={text} isTransmitting={isTransmitting} />) : inputMode === 'flash' ? (<FlashMode text={text} isTransmitting={isTransmitting} />) : inputMode === 'atc' ? (<ATCMode />) : (
-          <div className='flex flex-col gap-4 flex-1'>
-            <div className='bg-vibe-surface border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col items-center text-center gap-4'>
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center ${wsConnected ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}><Globe className='w-8 h-8' /></div>
-              <div><h3 className='font-bold text-lg'>Remote Control</h3><p className='text-xs text-white/40 mt-1'>Connect multiple devices</p></div>
-              <div className='w-full bg-black/20 rounded-xl p-4 border border-white/5'><p className='text-[10px] font-mono text-white/40 uppercase tracking-widest mb-1'>Room ID</p><p className='text-3xl font-bold tracking-[0.2em] text-vibe-primary'>{roomId}</p><input type='text' placeholder='Type new Room ID + Enter' className='w-full mt-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none text-white/60 uppercase' onKeyDown={e=>{if(e.key==='Enter'){const v=(e.target as HTMLInputElement).value.trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(v.length>0){setRoomId(v);localStorage.setItem('vibe_room_id',v);}}}} /></div>
-              <div className='w-full text-left'><p className='text-[10px] font-mono text-white/40 uppercase tracking-widest mb-2'>Webhook URL</p><div className='flex gap-2'><div className='flex-1 bg-black/20 rounded-lg p-2 text-[10px] font-mono text-white/60 truncate border border-white/5'>{window.location.origin}/api/webhook/{roomId}</div><button onClick={copyWebhook} className='p-2 bg-vibe-primary rounded-lg'>{copied ? <Check className='w-4 h-4' /> : <Copy className='w-4 h-4' />}</button></div></div>
-            </div>
-            {lastReceivedText && (<div style={{background:'#7c3aed',border:'2px solid white',borderRadius:'12px',padding:'20px',marginBottom:'12px'}}><p style={{color:'white',fontSize:'10px',fontFamily:'monospace',marginBottom:'8px'}}>MESSAGE RECEIVED</p><p style={{color:'white',fontSize:'18px',fontWeight:'bold',wordBreak:'break-all'}}>{lastReceivedText}</p><button onClick={()=>setLastReceivedText(null)} style={{color:'rgba(255,255,255,0.5)',fontSize:'11px',marginTop:'8px',background:'none',border:'none',cursor:'pointer'}}>dismiss</button></div>)}
-            <ImageDecoder receivedText={lastReceivedText} />
-            <QRDecoder receivedText={lastReceivedText} />
-            <MorseDecoder receivedText={lastReceivedText} />
-          </div>
+          <RemoteTab roomId={roomId} setRoomId={setRoomId} wsConnected={wsConnected} wsRef={wsRef} copied={copied} copyWebhook={copyWebhook} lastReceivedText={lastReceivedText} setLastReceivedText={setLastReceivedText} setText={setText} vibrateSafe={vibrateSafe} settings={settings} encryptionEnabled={encryptionEnabled} encryptionKey={encryptionKey} />
         )}
         <AnimatePresence>{text && (<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className='bg-vibe-surface/50 border border-white/5 rounded-xl p-4'><span className='text-[10px] font-mono uppercase tracking-wider text-white/40'>Morse Translation</span><div className='font-mono text-lg break-all tracking-widest text-vibe-primary/80'>{textToMorse(text)}</div><MorseDecoder receivedText={textToMorse(text)} /></motion.div>)}</AnimatePresence>
       </main>
