@@ -1,15 +1,11 @@
-import type { CapacitorConfig } from '@capacitor/cli';
-
+﻿import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.morsevibe.app',
   appName: 'Morse Vibe',
   webDir: 'dist',
-  // Point to your deployed Railway/Render server URL in production.
-  // During local dev, Capacitor will use the bundled dist/ files.
   server: {
-    // Uncomment and set this to your live server URL after deploying:
-    // url: 'https://your-morse-vibe.railway.app',
-    // cleartext: false,
+    cleartext: true,
+    allowNavigation: ['api.adsb.lol', '*.adsb.lol'],
   },
   plugins: {
     StatusBar: {
@@ -28,5 +24,4 @@ const config: CapacitorConfig = {
     backgroundColor: '#0F1011',
   },
 };
-
 export default config;

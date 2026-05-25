@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import { createServer as createViteServer } from "vite";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer } from "http";
@@ -8,141 +8,105 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MAX_MESSAGE_LENGTH = 500;
-const MAX_ROOM_CLIENTS = 20;
+class RateLimiter {
+  private requests: Map<string, number[]> = new Map();
+  private windowMs: number = 60 * 1000;
+  private maxRequests: number = 30;
+  isAllowed(key: string): boolean {
+    const now = Date.now();
+    const requests = this.requests.get(key) || [];
+    const validRequests = requests.filter(time => now - time < this.windowMs);
+    if (validRequests.length >= this.maxRequests) return false;
+    validRequests.push(now);
+    this.requests.set(key, validRequests);
+    return true;
+  }
+}
 
 async function startServer() {
+  console.log("Starting server...");
   const app = express();
   const server = createServer(app);
   const wss = new WebSocketServer({ server });
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 8080;
+  const WEBHOOK_TOKEN = process.env.WEBHOOK_TOKEN || "default-dev-token";
+  const rateLimiter = new RateLimiter();
+  app.use(express.json());
 
-  app.use(express.json({ limit: "10kb" }));
+  const validateWebhookAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) return res.status(401).json({ error: "Missing authorization header" });
+    const [scheme, token] = authHeader.split(' ');
+    if (scheme !== 'Bearer') return res.status(401).json({ error: "Invalid authorization scheme" });
+    if (token !== WEBHOOK_TOKEN) return res.status(403).json({ error: "Invalid webhook token" });
+    next();
+  };
 
-  // Room state: roomId -> Set<WebSocket>
   const rooms = new Map<string, Set<WebSocket>>();
-
-  const getOrCreateRoom = (roomId: string): Set<WebSocket> => {
-    if (!rooms.has(roomId)) rooms.set(roomId, new Set());
-    return rooms.get(roomId)!;
-  };
-
-  const leaveRoom = (ws: WebSocket, roomId: string | null) => {
-    if (!roomId) return;
-    const room = rooms.get(roomId);
-    if (!room) return;
-    room.delete(ws);
-    if (room.size === 0) rooms.delete(roomId);
-  };
-
-  const broadcast = (roomId: string, payload: object, exclude?: WebSocket) => {
-    const room = rooms.get(roomId);
-    if (!room) return 0;
-    let sent = 0;
-    room.forEach((client) => {
-      if (client !== exclude && client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(payload));
-        sent++;
-      }
-    });
-    return sent;
-  };
+  const wsRateLimiters = new WeakMap<WebSocket, RateLimiter>();
 
   wss.on("connection", (ws) => {
     let currentRoom: string | null = null;
-
-    // Ping/pong to detect stale connections
-    (ws as any).isAlive = true;
-    ws.on("pong", () => { (ws as any).isAlive = true; });
-
+    const limiter = new RateLimiter();
+    wsRateLimiters.set(ws, limiter);
     ws.on("message", (data) => {
+      if (!limiter.isAllowed("message")) { ws.send(JSON.stringify({ type: "error", error: "Too many messages." })); return; }
       try {
         const message = JSON.parse(data.toString());
-
+        if (data.byteLength > 50000) { ws.send(JSON.stringify({ type: "error", error: "Message too large" })); return; }
         if (message.type === "join") {
-          const roomId = String(message.roomId ?? "").toUpperCase().slice(0, 12);
-          if (!roomId) return;
-
-          leaveRoom(ws, currentRoom);
+          const { roomId } = message;
+          if (!roomId || typeof roomId !== 'string' || !roomId.match(/^[a-zA-Z0-9_-]{1,100}$/)) { ws.send(JSON.stringify({ type: "error", error: "Invalid room ID" })); return; }
+          if (currentRoom) rooms.get(currentRoom)?.delete(ws);
           currentRoom = roomId;
-          const room = getOrCreateRoom(roomId);
-
-          if (room.size >= MAX_ROOM_CLIENTS) {
-            ws.send(JSON.stringify({ type: "error", reason: "Room full" }));
-            return;
-          }
-
-          room.add(ws);
-          ws.send(JSON.stringify({ type: "joined", roomId, peers: room.size - 1 }));
+          if (!rooms.has(roomId)) rooms.set(roomId, new Set());
+          rooms.get(roomId)!.add(ws);
+          ws.send(JSON.stringify({ type: "joined", roomId }));
         }
-
         if (message.type === "vibe" && currentRoom) {
-          const text = String(message.text ?? "").slice(0, MAX_MESSAGE_LENGTH);
-          if (!text.trim()) return;
-          broadcast(currentRoom, { type: "remote_vibe", text }, ws);
+          const { text } = message;
+          if (!text || typeof text !== 'string' || text.length > 5000) { ws.send(JSON.stringify({ type: "error", error: "Invalid message" })); return; }
+          rooms.get(currentRoom)?.forEach((client) => { if (client !== ws && client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "remote_vibe", text })); });
         }
-      } catch (e) {
-        console.error("WS parse error:", e);
-      }
+      } catch (e) { console.error("WS error:", e); ws.send(JSON.stringify({ type: "error", error: "Invalid message format" })); }
     });
-
-    ws.on("close", () => leaveRoom(ws, currentRoom));
-    ws.on("error", (err) => {
-      console.error("WS client error:", err.message);
-      leaveRoom(ws, currentRoom);
-    });
+    ws.on("close", () => { if (currentRoom) { rooms.get(currentRoom)?.delete(ws); if (rooms.get(currentRoom)?.size === 0) rooms.delete(currentRoom); } });
   });
 
-  // Heartbeat — drop dead connections every 30s
-  const heartbeat = setInterval(() => {
-    wss.clients.forEach((ws) => {
-      if ((ws as any).isAlive === false) return ws.terminate();
-      (ws as any).isAlive = false;
-      ws.ping();
-    });
-  }, 30_000);
-
-  wss.on("close", () => clearInterval(heartbeat));
-
-  // Webhook: POST /api/webhook/:roomId { "message": "hello" }
-  app.post("/api/webhook/:roomId", (req, res) => {
-    const roomId = String(req.params.roomId ?? "").toUpperCase().slice(0, 12);
-    const message = String(req.body?.message ?? "").slice(0, MAX_MESSAGE_LENGTH);
-
-    if (!message.trim()) {
-      return res.status(400).json({ error: "message is required" });
+  // ATC proxy endpoint
+  app.get("/api/atc", async (req, res) => {
+    try {
+      const response = await fetch("https://api.adsb.lol/v2/lat/53.3/lon/-6.3/dist/250");
+      if (!response.ok) throw new Error("adsb.lol error " + response.status);
+      const data = await response.json();
+      res.json(data);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
-
-    const room = rooms.get(roomId);
-    if (!room || room.size === 0) {
-      return res.status(404).json({ error: "Room not found or no active listeners" });
-    }
-
-    const sent = broadcast(roomId, { type: "remote_vibe", text: message });
-    res.json({ status: "ok", room: roomId, sentTo: sent });
   });
 
-  // Health check
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok", rooms: rooms.size, clients: wss.clients.size });
+  app.post("/api/webhook/:roomId", validateWebhookAuth, (req, res) => {
+    const { roomId } = req.params;
+    const { message } = req.body;
+    const clientIp = req.ip || req.connection.remoteAddress || "unknown";
+    if (!rateLimiter.isAllowed(clientIp)) return res.status(429).json({ error: "Too many requests." });
+    if (!message || typeof message !== 'string') return res.status(400).json({ error: "Message required" });
+    if (message.length > 10000) return res.status(400).json({ error: "Message too long" });
+    if (!roomId.match(/^[a-zA-Z0-9_-]+$/)) return res.status(400).json({ error: "Invalid room ID" });
+    const roomClients = rooms.get(roomId);
+    if (roomClients) { roomClients.forEach((client) => { if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify({ type: "remote_vibe", text: message })); }); res.json({ status: "ok", sentTo: roomClients.size }); }
+    else res.status(404).json({ error: "Room not found" });
   });
 
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (_req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
-    });
+    app.get("*", (req, res) => { res.sendFile(path.join(__dirname, "dist", "index.html")); });
   }
 
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`✦ Morse Vibe server running on http://localhost:${PORT}`);
-  });
+  server.listen(PORT, "0.0.0.0", () => { console.log(`Server running on http://localhost:${PORT}`); });
 }
 
-startServer().catch(console.error);
+startServer();
