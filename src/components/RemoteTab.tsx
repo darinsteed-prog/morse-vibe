@@ -1,5 +1,5 @@
 ﻿import React, { useState, useRef } from 'react';
-import { Globe, Copy, Check, Radio, Bluetooth, Wifi, Send } from 'lucide-react';
+import { Globe, Copy, Check, Radio, Bluetooth, Wifi, Send, X } from 'lucide-react';
 import { ImageDecoder } from './ImageDecoder';
 import { QRDecoder } from './QRDecoder';
 import { MorseDecoder } from './MorseDecoder';
@@ -21,6 +21,7 @@ interface RemoteTabProps {
 }
 
 interface MeshMessage { from: string; text: string; time: string; rssi?: number; }
+interface BleDevice { deviceId: string; name: string; rssi?: number; }
 
 export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyWebhook, lastReceivedText, setLastReceivedText, encryptionEnabled, encryptionKey, setText, vibrateSafe, settings }: RemoteTabProps) {
   const [subTab, setSubTab] = useState<'remote'|'bitchat'|'lora'>('remote');
@@ -29,6 +30,8 @@ export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyW
   const [btStatus, setBtStatus] = useState('Not connected');
   const [btMessages, setBtMessages] = useState<MeshMessage[]>([]);
   const [btSendText, setBtSendText] = useState('');
+  const [foundDevices, setFoundDevices] = useState<BleDevice[]>([]);
+  const [scanning, setScanning] = useState(false);
   const btDeviceRef = useRef<any>(null);
   const bleClientRef = useRef<any>(null);
   const [autoVibe, setAutoVibe] = useState(true);
@@ -49,40 +52,55 @@ export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyW
     if(autoVibe&&msg.text) setText(msg.text);
   };
 
-  const connectBitChat = async () => {
-    setBtConnecting(true); setBtStatus('Initialising Bluetooth...');
+  const startScan = async () => {
+    setScanning(true); setFoundDevices([]); setBtStatus('Scanning for devices...');
     try {
       const { BleClient } = await import('@capacitor-community/bluetooth-le');
       bleClientRef.current = BleClient;
       await BleClient.initialize({ androidNeverForLocation: false });
-      setBtStatus('Scanning for devices (5s)...');
-      let found: any = null;
+      const seen = new Set<string>();
       await BleClient.requestLEScan({ allowDuplicates: false }, (result) => {
-        if(result.device && !found) {
-          found = result.device;
-          setBtStatus('Found: ' + (result.device.name || result.device.deviceId));
-          btDeviceRef.current = result.device;
+        if(result.device && !seen.has(result.device.deviceId)) {
+          seen.add(result.device.deviceId);
+          setFoundDevices(prev => [...prev, {
+            deviceId: result.device.deviceId,
+            name: result.device.name || 'Unknown Device',
+            rssi: result.rssi
+          }].slice(0, 20));
         }
       });
       setTimeout(async () => {
-        await BleClient.stopLEScan();
-        if(btDeviceRef.current) {
-          setBtStatus('Connecting...');
-          await BleClient.connect(btDeviceRef.current.deviceId, () => { setBtConnected(false); setBtStatus('Disconnected'); });
-          setBtConnected(true); setBtConnecting(false);
-          setBtStatus('Connected to ' + (btDeviceRef.current.name || btDeviceRef.current.deviceId));
-        } else {
-          setBtConnecting(false); setBtStatus('No devices found - try again');
-        }
-      }, 5000);
+        try { await BleClient.stopLEScan(); } catch(e) {}
+        setScanning(false);
+        setBtStatus(seen.size > 0 ? 'Select a device below' : 'No devices found - try again');
+      }, 8000);
     } catch(e: any) {
-      setBtConnecting(false); setBtStatus('Failed: ' + (e.message||'Could not connect'));
+      setScanning(false); setBtStatus('Scan failed: ' + (e.message||'Unknown error'));
+    }
+  };
+
+  const stopScan = async () => {
+    try { if(bleClientRef.current) await bleClientRef.current.stopLEScan(); } catch(e) {}
+    setScanning(false); setBtStatus('Scan stopped');
+  };
+
+  const connectToDevice = async (device: BleDevice) => {
+    setBtConnecting(true); setBtStatus('Connecting to ' + device.name + '...');
+    try {
+      await bleClientRef.current.connect(device.deviceId, () => {
+        setBtConnected(false); btDeviceRef.current = null; setBtStatus('Disconnected');
+      });
+      btDeviceRef.current = device;
+      setBtConnected(true); setBtConnecting(false); setFoundDevices([]);
+      setBtStatus('Connected to ' + device.name);
+    } catch(e: any) {
+      setBtConnecting(false); setBtStatus('Connect failed: ' + (e.message||'Unknown error'));
     }
   };
 
   const disconnectBitChat = async () => {
     try { if(bleClientRef.current&&btDeviceRef.current) await bleClientRef.current.disconnect(btDeviceRef.current.deviceId); } catch(e) {}
-    setBtConnected(false); setBtStatus('Disconnected');
+    setBtConnected(false); btDeviceRef.current = null; setBtStatus('Disconnected');
   };
 
   const sendBtMessage = () => {
@@ -100,21 +118,6 @@ export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyW
       ws.onclose=()=>{ setLoraConnected(false); setLoraStatus('Disconnected'); };
       ws.onerror=()=>{ setLoraConnected(false); setLoraConnecting(false); setLoraStatus('Connection failed'); };
     } catch(e) { setLoraConnecting(false); setLoraStatus('Error'); }
-  };
-
-  const connectLorabt = async () => {
-    setLoraConnecting(true); setLoraStatus('Scanning for Meshtastic...');
-    try {
-      const device = await (navigator as any).bluetooth.requestDevice({ filters:[{namePrefix:'Meshtastic'}], optionalServices:['6ba1b218-15a8-461f-9fa8-5d6646df81ad'] });
-      setLoraStatus('Connecting to '+device.name+'...');
-      const server = await device.gatt.connect();
-      setLoraConnected(true); setLoraConnecting(false); setLoraStatus('Connected to '+device.name);
-      device.addEventListener('gattserverdisconnected',()=>{ setLoraConnected(false); setLoraStatus('Disconnected'); });
-      const service = await server.getPrimaryService('6ba1b218-15a8-461f-9fa8-5d6646df81ad');
-      const char = await service.getCharacteristic('ed9da18c-a800-4f66-a670-aa7547ed8d4f');
-      await char.startNotifications();
-      char.addEventListener('characteristicvaluechanged',(e:any)=>{ const text=new TextDecoder().decode(e.target.value); try { handleIncoming(JSON.parse(text),'lora'); } catch { handleIncoming({text},'lora'); } });
-    } catch(e:any) { setLoraConnecting(false); setLoraStatus('Failed: '+e.message); }
   };
 
   const sendLoraMessage = () => {
@@ -180,14 +183,44 @@ export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyW
             <div className="flex items-center gap-2">
               <Bluetooth className="w-4 h-4 text-blue-400"/>
               <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">BitChat — Phone to Phone</span>
-              <div className={`ml-auto w-2 h-2 rounded-full ${btConnected?'bg-emerald-500':btConnecting?'bg-amber-500 animate-pulse':'bg-red-500/50'}`}/>
+              <div className={`ml-auto w-2 h-2 rounded-full ${btConnected?'bg-emerald-500':scanning?'bg-blue-500 animate-pulse':'bg-red-500/50'}`}/>
             </div>
             <p className="text-[9px] font-mono text-white/25">Direct Bluetooth between phones. No internet needed. Range ~30m.</p>
-            <p className="text-[10px] font-mono text-white/30">{btStatus}</p>
-            {!btConnected?(
-              <button onClick={connectBitChat} disabled={btConnecting} className="w-full py-3 bg-blue-600 rounded-xl text-white text-xs font-bold uppercase tracking-widest disabled:opacity-30">{btConnecting?'Scanning...':'Scan for Devices'}</button>
-            ):(
-              <button onClick={disconnectBitChat} className="w-full py-3 bg-white/10 rounded-xl text-white text-xs font-bold uppercase tracking-widest">Disconnect</button>
+            <p className="text-[10px] font-mono text-white/40">{btStatus}</p>
+            {!btConnected && !scanning && (
+              <button onClick={startScan} className="w-full py-3 bg-blue-600 rounded-xl text-white text-xs font-bold uppercase tracking-widest">Scan for Devices</button>
+            )}
+            {scanning && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"/>
+                  <span className="text-[10px] font-mono text-blue-400">Scanning... ({foundDevices.length} found)</span>
+                  <button onClick={stopScan} className="ml-auto text-[10px] font-mono text-white/40 border border-white/20 rounded px-2 py-1">Stop</button>
+                </div>
+              </div>
+            )}
+            {foundDevices.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <p className="text-[9px] font-mono text-white/30 uppercase tracking-wider">Select Device to Connect</p>
+                {foundDevices.map(d=>(
+                  <button key={d.deviceId} onClick={()=>connectToDevice(d)} disabled={btConnecting} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 disabled:opacity-50">
+                    <div className="flex items-center gap-2">
+                      <Bluetooth className="w-4 h-4 text-blue-400"/>
+                      <div className="text-left">
+                        <p className="text-xs font-bold">{d.name}</p>
+                        <p className="text-[9px] font-mono text-white/30">{d.deviceId}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {d.rssi && <span className="text-[9px] font-mono text-white/30">{d.rssi}dBm</span>}
+                      <span className="text-[9px] font-mono text-blue-400">{btConnecting?'Connecting...':'Connect'}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {btConnected && (
+              <button onClick={disconnectBitChat} className="w-full py-3 bg-white/10 rounded-xl text-white text-xs font-bold uppercase tracking-widest">Disconnect from {btDeviceRef.current?.name}</button>
             )}
             <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
               <p className="text-xs font-bold">Auto Vibe Received</p>
@@ -196,7 +229,7 @@ export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyW
               </button>
             </div>
           </div>
-          {btConnected&&(
+          {btConnected && (
             <div className="flex gap-2">
               <input type="text" value={btSendText} onChange={e=>setBtSendText(e.target.value)} placeholder="Send via Bluetooth..." className="flex-1 bg-vibe-surface border border-white/10 rounded-xl px-4 py-3 text-sm font-mono placeholder:text-white/20 focus:outline-none" onKeyDown={e=>e.key==='Enter'&&sendBtMessage()}/>
               <button onClick={sendBtMessage} disabled={!btSendText.trim()} className="p-3 bg-vibe-primary rounded-xl disabled:opacity-30"><Send className="w-5 h-5"/></button>
@@ -205,7 +238,7 @@ export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyW
           {msgList(btMessages)}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <p className="text-[9px] font-mono text-white/30 uppercase tracking-wider mb-1">How it works</p>
-            <p className="text-[9px] text-white/20 leading-relaxed">Both users open Morse Vibe and go to BitChat tab. One taps Scan, selects the other phone. Messages send via Bluetooth LE.</p>
+            <p className="text-[9px] text-white/20 leading-relaxed">Tap Scan, wait for nearby devices to appear, tap one to connect. Both phones need Morse Vibe open. Messages send via Bluetooth LE.</p>
           </div>
         </div>
       )}
@@ -223,20 +256,20 @@ export function RemoteTab({ roomId, setRoomId, wsConnected, wsRef, copied, copyW
               <button onClick={()=>setLoraMode('wifi')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1 ${loraMode==='wifi'?'bg-white/10 text-white':'text-white/40'}`}><Wifi className="w-3 h-3"/>WiFi</button>
               <button onClick={()=>setLoraMode('bluetooth')} className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-1 ${loraMode==='bluetooth'?'bg-white/10 text-white':'text-white/40'}`}><Bluetooth className="w-3 h-3"/>Bluetooth</button>
             </div>
-            {loraMode==='wifi'&&(
+            {loraMode==='wifi' && (
               <div className="flex flex-col gap-2">
                 <input type="text" value={loraHost} onChange={e=>setLoraHost(e.target.value)} placeholder="Device IP (e.g. 192.168.0.1)" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm font-mono placeholder:text-white/20 focus:outline-none"/>
                 <input type="text" value={loraPort} onChange={e=>setLoraPort(e.target.value)} placeholder="Port (default 4403)" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm font-mono placeholder:text-white/20 focus:outline-none"/>
               </div>
             )}
             <p className="text-[10px] font-mono text-white/30">{loraStatus}</p>
-            {!loraConnected?(
-              <button onClick={loraMode==='wifi'?connectLora:connectLorabt} disabled={loraConnecting} className="w-full py-3 bg-green-700 rounded-xl text-white text-xs font-bold uppercase tracking-widest disabled:opacity-30">{loraConnecting?'Connecting...':'Connect to Meshtastic'}</button>
-            ):(
+            {!loraConnected ? (
+              <button onClick={connectLora} disabled={loraConnecting} className="w-full py-3 bg-green-700 rounded-xl text-white text-xs font-bold uppercase tracking-widest disabled:opacity-30">{loraConnecting?'Connecting...':'Connect to Meshtastic'}</button>
+            ) : (
               <button onClick={()=>{loraWsRef.current?.close();setLoraConnected(false);setLoraStatus('Disconnected');}} className="w-full py-3 bg-white/10 rounded-xl text-white text-xs font-bold uppercase tracking-widest">Disconnect</button>
             )}
           </div>
-          {loraConnected&&(
+          {loraConnected && (
             <div className="flex gap-2">
               <input type="text" value={loraSendText} onChange={e=>setLoraSendText(e.target.value)} placeholder="Send via LoRa..." className="flex-1 bg-vibe-surface border border-white/10 rounded-xl px-4 py-3 text-sm font-mono placeholder:text-white/20 focus:outline-none" onKeyDown={e=>e.key==='Enter'&&sendLoraMessage()}/>
               <button onClick={sendLoraMessage} disabled={!loraSendText.trim()} className="p-3 bg-vibe-primary rounded-xl disabled:opacity-30"><Send className="w-5 h-5"/></button>
