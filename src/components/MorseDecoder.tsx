@@ -15,8 +15,8 @@ export function MorseDecoder({ receivedText }: MorseDecoderProps) {
   if (!decoded || decoded === "?") return null;
   return (
     <div className="bg-white/5 rounded-xl p-3 mt-2 border border-white/5">
-      <span className="text-[9px] font-mono uppercase tracking-wider text-white/30">Decoded: </span>
-      <span className="text-sm font-bold text-vibe-primary">{decoded}</span>
+      <span className="text-[11px] font-mono uppercase tracking-wider text-white/30">Decoded: </span>
+      <span className="text-base font-bold text-vibe-primary">{decoded}</span>
     </div>
   );
 }

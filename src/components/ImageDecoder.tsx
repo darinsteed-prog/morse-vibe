@@ -38,7 +38,7 @@ export function ImageDecoder({ receivedText }: ImageDecoderProps) {
     <div className="bg-vibe-surface/50 border border-vibe-primary/20 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-center gap-2 text-vibe-primary/60">
         <ImageIcon className="w-4 h-4" />
-        <span className="text-[10px] font-mono uppercase tracking-wider">Image Received</span>
+        <span className="text-[12px] font-mono uppercase tracking-wider">Image Received</span>
       </div>
       <canvas ref={canvasRef} width={GRID_SIZE} height={GRID_SIZE} className="rounded border border-white/10" style={{ imageRendering: 'pixelated', width: 128, height: 128 }} />
     </div>

@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 interface SoundModeProps { text: string; isTransmitting: boolean; }
 export function SoundMode({ text, isTransmitting }: SoundModeProps) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -83,23 +83,23 @@ export function SoundMode({ text, isTransmitting }: SoundModeProps) {
 
   return (
     <div className="bg-vibe-surface border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col gap-4">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">Sound Transmit</span>
+      <span className="text-[12px] font-mono uppercase tracking-wider text-white/40">Sound Transmit</span>
       <div className="flex flex-col gap-3">
-        <div className="flex justify-between"><span className="text-[10px] font-mono text-white/40">Frequency</span><span className="text-[10px] font-mono text-vibe-primary">{frequency}Hz</span></div>
+        <div className="flex justify-between"><span className="text-[12px] font-mono text-white/40">Frequency</span><span className="text-[12px] font-mono text-vibe-primary">{frequency}Hz</span></div>
         <input type="range" min={300} max={1200} step={50} value={frequency} onChange={e => setFrequency(Number(e.target.value))} className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-vibe-primary" disabled={isPlaying} />
-        <div className="flex justify-between"><span className="text-[10px] font-mono text-white/40">Speed</span><span className="text-[10px] font-mono text-vibe-primary">{wpm} WPM</span></div>
+        <div className="flex justify-between"><span className="text-[12px] font-mono text-white/40">Speed</span><span className="text-[12px] font-mono text-vibe-primary">{wpm} WPM</span></div>
         <input type="range" min={5} max={30} step={1} value={wpm} onChange={e => setWpm(Number(e.target.value))} className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-vibe-primary" disabled={isPlaying} />
       </div>
       <div className="flex gap-2">
-        <button onClick={playMorse} disabled={!text.trim() || isPlaying} className="flex-1 py-3 rounded-xl text-white text-xs font-bold uppercase tracking-widest bg-vibe-primary disabled:opacity-30">
+        <button onClick={playMorse} disabled={!text.trim() || isPlaying} className="flex-1 py-3 rounded-xl text-white text-base font-bold uppercase tracking-widest bg-vibe-primary disabled:opacity-30">
           Play Sound
         </button>
-        <button onClick={stopSound} disabled={!isPlaying} className="flex-1 py-3 rounded-xl text-white text-xs font-bold uppercase tracking-widest bg-red-500/80 disabled:opacity-30">
+        <button onClick={stopSound} disabled={!isPlaying} className="flex-1 py-3 rounded-xl text-white text-base font-bold uppercase tracking-widest bg-red-500/80 disabled:opacity-30">
           Stop
         </button>
       </div>
       {isPlaying && <div className="flex justify-center gap-1">{[...Array(5)].map((_,i)=><div key={i} className="w-1 bg-vibe-primary rounded-full animate-bounce" style={{height:'12px',animationDelay:i*0.1+'s'}} />)}</div>}
-      <p className="text-[9px] font-mono text-white/20 text-center">Type message in Keys tab first</p>
+      <p className="text-[11px] font-mono text-white/20 text-center">Type message in Keys tab first</p>
     </div>
   );
 }

@@ -24,7 +24,7 @@ export function TelegraphMode({
       <div className="bg-vibe-surface border border-white/8 rounded-2xl p-4 relative overflow-hidden min-h-[80px]">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-vibe-primary/40 to-transparent" />
         <div className="flex justify-between items-start mb-1">
-          <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Decoded</span>
+          <span className="text-[12px] font-mono text-white/30 uppercase tracking-widest">Decoded</span>
           {text && (
             <button
               onClick={clearInput}
@@ -34,7 +34,7 @@ export function TelegraphMode({
             </button>
           )}
         </div>
-        <p className="text-xl font-semibold text-white/90 break-words leading-relaxed mt-1">
+        <p className="text-2xl font-semibold text-white/90 break-words leading-relaxed mt-1">
           {text || <span className="text-white/15 font-normal">tap to compose...</span>}
         </p>
       </div>
@@ -46,7 +46,7 @@ export function TelegraphMode({
             {tapSequence}
           </span>
         ) : (
-          <span className="text-[10px] font-mono text-white/20 uppercase tracking-widest">
+          <span className="text-[12px] font-mono text-white/20 uppercase tracking-widest">
             short = dot · long = dash
           </span>
         )}

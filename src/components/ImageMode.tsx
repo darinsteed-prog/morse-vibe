@@ -1,4 +1,4 @@
-﻿import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ImageIcon, AlertTriangle } from 'lucide-react';
 import QRCode from 'qrcode';
 
@@ -47,7 +47,7 @@ function processImage(img: HTMLImageElement, contrast: number, brightness: numbe
 }
 
 export function ImageMode({ setText, isTransmitting }: ImageModeProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null); const cameraRef = useRef<HTMLInputElement>(null);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [encodedPreview, setEncodedPreview] = useState<string | null>(null);
@@ -101,7 +101,7 @@ export function ImageMode({ setText, isTransmitting }: ImageModeProps) {
       });
       setQrGenerated(true);
     } catch(e: any) {
-      setError('QR too large — increase contrast to reduce data size.');
+      setError('QR too large � increase contrast to reduce data size.');
     }
     setQrLoading(false);
   };
@@ -112,70 +112,78 @@ export function ImageMode({ setText, isTransmitting }: ImageModeProps) {
     <div className="bg-vibe-surface border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col gap-4">
       <div className="flex items-center gap-2 text-white/40">
         <ImageIcon className="w-4 h-4" />
-        <span className="text-[10px] font-mono uppercase tracking-wider">Image Transmit · 48x48 · 16-shade</span>
+        <span className="text-[12px] font-mono uppercase tracking-wider">Image Transmit � 48x48 � 16-shade</span>
       </div>
       <div className="flex gap-1">
         {(['morse','qr','both'] as const).map(t => (
-          <button key={t} onClick={()=>setTab(t)} className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${tab===t?'bg-white/10 text-white':'text-white/40 hover:text-white/60'}`}>
+          <button key={t} onClick={()=>setTab(t)} className={`flex-1 py-2 rounded-lg text-[12px] font-bold uppercase tracking-widest transition-colors ${tab===t?'bg-white/10 text-white':'text-white/40 hover:text-white/60'}`}>
             {t==='morse'?'Morse':t==='qr'?'QR':'Both'}
           </button>
         ))}
       </div>
-      <button onClick={() => fileRef.current?.click()} disabled={isTransmitting || loading}
-        className="w-full py-6 border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-vibe-primary/40 hover:bg-vibe-primary/5 transition-all disabled:opacity-30">
-        <ImageIcon className="w-7 h-7 text-white/20" />
-        <span className="text-xs font-mono text-white/40 uppercase tracking-wider">{loading?'Processing...':'Tap to select image'}</span>
-      </button>
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-      {error && <div className="flex items-center gap-2 text-amber-400 text-xs font-mono"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
+      <div className="flex gap-2">
+        <button onClick={() => fileRef.current?.click()} disabled={isTransmitting || loading}
+          className="flex-1 py-4 border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-vibe-primary/40 hover:bg-vibe-primary/5 transition-all disabled:opacity-30">
+          <ImageIcon className="w-6 h-6 text-white/20" />
+          <span className="text-[12px] font-mono text-white/40 uppercase tracking-wider">{loading?'Processing...':'Gallery'}</span>
+        </button>
+        <button onClick={() => cameraRef.current?.click()} disabled={isTransmitting || loading}
+          className="flex-1 py-4 border-2 border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-vibe-primary/40 hover:bg-vibe-primary/5 transition-all disabled:opacity-30">
+          <ImageIcon className="w-6 h-6 text-white/20" />
+          <span className="text-[12px] font-mono text-white/40 uppercase tracking-wider">{loading?'Processing...':'Camera'}</span>
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+      {error && <div className="flex items-center gap-2 text-amber-400 text-base font-mono"><AlertTriangle className="w-4 h-4 shrink-0" />{error}</div>}
       {encodedPreview && (
         <>
           <div className="flex gap-4 items-start">
             <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-mono text-white/30 uppercase">Preview</span>
+              <span className="text-[11px] font-mono text-white/30 uppercase">Preview</span>
               <img src={encodedPreview} alt="Encoded" className="w-20 h-20 rounded border border-white/10" style={{imageRendering:'pixelated'}} />
             </div>
             <div className="flex flex-col gap-2 flex-1">
-              <p className="text-[10px] font-mono text-vibe-primary/70">{charCount} chars · 48×48 · 4-bit</p>
-              <p className="text-[9px] font-mono text-white/25">
+              <p className="text-[12px] font-mono text-vibe-primary/70">{charCount} chars � 48�48 � 4-bit</p>
+              <p className="text-[11px] font-mono text-white/25">
                 {tab==='morse'?'Vibrate morse to transmit':tab==='qr'?'Show QR for instant scan':'Vibrate morse + show QR simultaneously'}
               </p>
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <div className="flex justify-between"><span className="text-[9px] font-mono text-white/30">Contrast</span><span className="text-[9px] font-mono text-vibe-primary">{contrast}%</span></div>
+            <div className="flex justify-between"><span className="text-[11px] font-mono text-white/30">Contrast</span><span className="text-[11px] font-mono text-vibe-primary">{contrast}%</span></div>
             <input type="range" min={50} max={300} step={5} value={contrast} onChange={e=>handleContrast(+e.target.value)} className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-vibe-primary" />
-            <div className="flex justify-between"><span className="text-[9px] font-mono text-white/30">Brightness</span><span className="text-[9px] font-mono text-vibe-primary">{brightness}%</span></div>
+            <div className="flex justify-between"><span className="text-[11px] font-mono text-white/30">Brightness</span><span className="text-[11px] font-mono text-vibe-primary">{brightness}%</span></div>
             <input type="range" min={50} max={200} step={5} value={brightness} onChange={e=>handleBrightness(+e.target.value)} className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-vibe-primary" />
           </div>
           <canvas ref={qrCanvasRef} style={{display: qrGenerated && showQR ? 'block' : 'none'}} className="rounded-xl border-4 border-white mx-auto" />
           {showQR && (
             <>
-              <button onClick={generateQR} disabled={qrLoading||!morseText} className="w-full py-3 bg-vibe-primary rounded-xl text-white text-xs font-bold uppercase tracking-widest disabled:opacity-30">
+              <button onClick={generateQR} disabled={qrLoading||!morseText} className="w-full py-3 bg-vibe-primary rounded-xl text-white text-base font-bold uppercase tracking-widest disabled:opacity-30">
                 {qrLoading?'Generating...':qrGenerated?'Regenerate QR':'Generate QR Code'}
               </button>
               {qrGenerated && (
-                <p className="text-[9px] font-mono text-vibe-primary/60 text-center">
+                <p className="text-[11px] font-mono text-vibe-primary/60 text-center">
                   {tab==='both'?'Show QR while morse vibrates':'Show this QR to receiver to scan'}
                 </p>
               )}
             </>
           )}
-          {tab==='morse' && <p className="text-[9px] font-mono text-white/30 text-center">Tap Start Vibe below to transmit</p>}
+          {tab==='morse' && <p className="text-[11px] font-mono text-white/30 text-center">Tap Start Vibe below to transmit</p>}
           {tab==='both' && qrGenerated && isTransmitting && (
             <div className="bg-vibe-primary/10 border border-vibe-primary/30 rounded-xl p-3 text-center">
-              <p className="text-[10px] font-mono text-vibe-primary font-bold">TRANSMITTING — Morse + QR active</p>
+              <p className="text-[12px] font-mono text-vibe-primary font-bold">TRANSMITTING � Morse + QR active</p>
             </div>
           )}
         </>
       )}
       {!encodedPreview && (
         <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-          <p className="text-[9px] font-mono text-white/30 uppercase tracking-wider mb-1">Modes</p>
-          <ul className="text-[9px] text-white/25 space-y-0.5 leading-relaxed">
-            <li>· Morse — transmit via vibration only</li>
-            <li>· QR — show scannable QR code only</li>
-            <li>· Both — vibrate morse AND show QR at same time</li>
+          <p className="text-[11px] font-mono text-white/30 uppercase tracking-wider mb-1">Modes</p>
+          <ul className="text-[11px] text-white/25 space-y-0.5 leading-relaxed">
+            <li>� Morse � transmit via vibration only</li>
+            <li>� QR � show scannable QR code only</li>
+            <li>� Both � vibrate morse AND show QR at same time</li>
           </ul>
         </div>
       )}

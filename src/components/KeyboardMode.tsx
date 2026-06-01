@@ -33,20 +33,20 @@ export function KeyboardMode({ text, setText, isTransmitting, clearInput }: Keyb
             if (e.target.value.length <= MAX_CHARS) setText(e.target.value);
           }}
           placeholder="Type your message..."
-          className="w-full bg-transparent border-none text-xl font-sans font-semibold placeholder:text-white/10 resize-none h-28 leading-relaxed"
+          className="w-full bg-transparent border-none text-2xl font-sans font-semibold placeholder:text-white/10 resize-none h-28 leading-relaxed"
           disabled={isTransmitting}
           style={{ fontFamily: 'Syne, sans-serif' }}
         />
 
         <div className="flex justify-between items-center mt-3 pt-3 border-t border-white/5">
-          <span className={`text-xs font-mono transition-colors ${
+          <span className={`text-base font-mono transition-colors ${
             isAtLimit ? 'text-red-400' : isNearLimit ? 'text-amber-400' : 'text-white/20'
           }`}>
             {text.length}/{MAX_CHARS}
           </span>
           <div className="flex items-center gap-3">
             {isAtLimit && (
-              <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider">limit reached</span>
+              <span className="text-[12px] font-mono text-red-400 uppercase tracking-wider">limit reached</span>
             )}
             {text && !isTransmitting && (
               <button
