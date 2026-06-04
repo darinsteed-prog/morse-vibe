@@ -29,7 +29,7 @@ const getSuggestions = (text: string): string[] => {
 };
 
 export function FlashMode({ text, isTransmitting }: FlashModeProps) {
-  const [mode, setMode] = useState<'send'|'receive'>('send');
+
   const [isFlashing, setIsFlashing] = useState(false);
   const [wpm, setWpm] = useState(10);
   const [useScreen, setUseScreen] = useState(false);
@@ -242,14 +242,9 @@ export function FlashMode({ text, isTransmitting }: FlashModeProps) {
       <video ref={videoRef} className="hidden" playsInline muted />
       <canvas ref={canvasRef} className="hidden" />
       <div className="bg-vibe-surface border border-white/10 rounded-2xl p-4 shadow-xl flex flex-col gap-4">
-        <div className="flex gap-1">
-          <button onClick={() => { stopReceiving(); setMode('send'); }}
-            className={`flex-1 py-2 rounded-lg text-[12px] font-bold uppercase tracking-widest transition-colors ${mode==='send'?'bg-white/10 text-white':'text-white/40'}`}>Send</button>
-          <button onClick={() => { stopFlash(); setMode('receive'); }}
-            className={`flex-1 py-2 rounded-lg text-[12px] font-bold uppercase tracking-widest transition-colors ${mode==='receive'?'bg-white/10 text-white':'text-white/40'}`}>Receive</button>
-        </div>
 
-        {mode === 'send' && <>
+
+
           <span className="text-[12px] font-mono uppercase tracking-wider text-white/40">Flash Transmit</span>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between">
@@ -278,61 +273,8 @@ export function FlashMode({ text, isTransmitting }: FlashModeProps) {
               className="flex-1 py-3 rounded-xl text-base font-bold uppercase tracking-widest bg-red-500 text-white disabled:opacity-30">Stop</button>
           </div>
           <p className="text-[11px] font-mono text-white/20 text-center">Type message in Keys tab first</p>
-        </>}
 
-        {mode === 'receive' && <>
-          <span className="text-[12px] font-mono uppercase tracking-wider text-white/40">Flash Receive</span>
-          <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
-            <div className="flex-1">
-              <p className="text-[11px] font-mono text-white/40">Light Level</p>
-              <div className="w-full h-2 bg-white/10 rounded-full mt-1">
-                <div className="h-2 bg-vibe-primary rounded-full transition-all" style={{width: Math.min(100, lightLevel/2.55)+'%'}} />
-              </div>
-            </div>
-            <span className="text-[12px] font-mono text-vibe-primary">{lightLevel}</span>
-          </div>
-          <div className="flex gap-2">
-            <button onClick={startReceiving} disabled={receiving}
-              className="flex-1 py-3 rounded-xl text-base font-bold uppercase tracking-widest bg-vibe-primary text-white disabled:opacity-30">Start Receive</button>
-            <button onClick={stopReceiving} disabled={!receiving}
-              className="flex-1 py-3 rounded-xl text-base font-bold uppercase tracking-widest bg-red-500 text-white disabled:opacity-30">Stop</button>
-          </div>
-          {receiving && <p className="text-[11px] font-mono text-vibe-primary/60 text-center">Point camera at torch · calibrating...</p>}
-          {receivedMorse && (
-            <div className="bg-black/30 rounded-xl p-3">
-              <p className="text-[11px] font-mono text-white/30 mb-1">MORSE</p>
-              <p className="font-mono text-base text-vibe-primary/80 break-all">{receivedMorse}</p>
-            </div>
-          )}
-          {receivedText && (
-            <div className="bg-black/30 rounded-xl p-3 flex flex-col gap-2">
-              <p className="text-[11px] font-mono text-white/30">DECODED</p>
-              <p className="font-mono text-2xl text-white break-all">
-                {receivedText.split("").map((ch, i) => (
-                  <span key={i} style={{ color: ch === "?" ? "#fbbf24" : "white" }}>{ch}</span>
-                ))}
-              </p>
-              {suggestions.length > 0 && (
-                <div className="flex flex-col gap-1 mt-1">
-                  <span className="text-[10px] font-mono text-yellow-400/50 uppercase tracking-wider">Did you mean?</span>
-                  <div className="flex gap-1 flex-wrap">
-                    {suggestions.map(w => (
-                      <button key={w} onClick={() => acceptSuggestion(w)}
-                        className="px-3 py-1 bg-yellow-400/10 border border-yellow-400/30 rounded-lg text-[12px] font-mono font-bold text-yellow-400/80 hover:bg-yellow-400/20 transition-colors">
-                        {w}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          {receivedText && (
-            <button onClick={() => { setReceivedText(''); setReceivedMorse(''); setSuggestions([]); }}
-              className="py-2 rounded-xl text-[12px] font-mono text-white/40 border border-white/10">Clear</button>
-          )}
-          <p className="text-[11px] font-mono text-white/20 text-center">Point back camera at flashing torch · yellow = uncertain</p>
-        </>}
+
       </div>
     </>
   );
