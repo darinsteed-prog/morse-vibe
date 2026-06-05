@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        release {
+            storeFile file("morse-vibe-release.jks")
+            storePassword project.hasProperty("STORE_PASSWORD") ? STORE_PASSWORD : ""
+            keyAlias "morse-vibe"
+            keyPassword project.hasProperty("KEY_PASSWORD") ? KEY_PASSWORD : ""
+        }
+    }
     namespace = "com.morsevibe.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
