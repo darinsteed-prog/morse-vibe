@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         release {
-            storeFile file("morse-vibe-release.jks")
+            storeFile file("../morse-vibe-release.jks")
             storePassword project.hasProperty("STORE_PASSWORD") ? STORE_PASSWORD : ""
             keyAlias "morse-vibe"
             keyPassword project.hasProperty("KEY_PASSWORD") ? KEY_PASSWORD : ""
@@ -26,6 +26,7 @@ android {
     }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
