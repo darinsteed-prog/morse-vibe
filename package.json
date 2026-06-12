@@ -25,6 +25,7 @@
     "@capacitor/haptics": "^6.0.3",
     "@capacitor/ios": "^6.2.1",
     "@capacitor/status-bar": "^6.0.3",
+    "@revenuecat/purchases-capacitor": "^13.1.7",
     "@tailwindcss/vite": "^4.1.14",
     "@types/crypto-js": "^4.2.2",
     "@vitejs/plugin-react": "^5.0.4",

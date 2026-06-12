@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { ProProvider } from './pro';
+import { ProGate } from './components/ProGate';
 import { motion, AnimatePresence } from 'motion/react';
 import { Zap, Play, Square, Settings, History, Globe, Copy, Check, ChevronRight, Trash2, Plane, X } from 'lucide-react';
 import { textToMorse, textToVibrationPattern, DEFAULT_SETTINGS, MORSE_TO_CHAR } from './constants';
@@ -264,6 +266,7 @@ function ATCMode() {
   const dir=(h)=>h==null?'?':['N','NE','E','SE','S','SW','W','NW'][Math.round(h/45)%8];
 
   return (
+    <ProProvider>
     <div style={{display:'flex',flexDirection:'column',gap:'10px',flex:1}}>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
         <div>
@@ -349,6 +352,7 @@ function ATCMode() {
         <p style={{color:'rgba(0,255,70,0.3)',fontSize:'10px',fontFamily:'monospace',textAlign:'center'}}>{flights.length>0?flights.length+' CONTACTS � TAP BLIP FOR DETAILS':'NO CONTACTS'}</p>
       )}
     </div>
+  </ProProvider>
   );
 }
 
