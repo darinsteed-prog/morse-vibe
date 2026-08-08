@@ -9,13 +9,7 @@ interface ProGateProps {
 }
 
 export function ProGate({ feature, description, children }: ProGateProps) {
-  const { isPro, loading, purchase, restore } = usePro();
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-40">
-      <div className="w-6 h-6 border-2 border-vibe-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  const { isPro, purchase, restore } = usePro();
 
   if (isPro) return <>{children}</>;
 
@@ -33,11 +27,11 @@ export function ProGate({ feature, description, children }: ProGateProps) {
         <p className="text-2xl font-bold text-white mt-1">$1.99</p>
         <p className="text-[11px] text-white/30">Unlocks Air Radar, Remote & Nearby tabs</p>
       </div>
-      <button onClick={purchase}
+      <button onTouchEnd={(e) => { e.preventDefault(); purchase(); }}
         className="w-full py-4 bg-vibe-primary rounded-xl font-bold text-lg uppercase tracking-widest text-white flex items-center justify-center gap-2 active:scale-95 transition-all">
         <Zap className="w-5 h-5" fill="currentColor" /> Unlock Pro
       </button>
-      <button onClick={restore} className="text-[12px] font-mono text-white/30 hover:text-white/50">
+      <button onTouchEnd={(e) => { e.preventDefault(); restore(); }} className="text-[12px] font-mono text-white/30 hover:text-white/50">
         Restore previous purchase
       </button>
     </div>

@@ -1,70 +1,59 @@
 ﻿import React, { createContext, useContext, useState, useEffect } from "react";
+import { CapacitorBilling } from "./billing";
 
-const REVENUECAT_API_KEY = "goog_CpFrxcxcujCMTnQtgNuPKkPmpNX";
-const PRO_ENTITLEMENT = "Morse Vibe Pro";
+const PRODUCT_ID = "pro_unlock";
 
 interface ProContextType {
   isPro: boolean;
-  loading: boolean;
   purchase: () => Promise<void>;
   restore: () => Promise<void>;
 }
 
 const ProContext = createContext<ProContextType>({
   isPro: false,
-  loading: true,
   purchase: async () => {},
   restore: async () => {},
 });
 
 export function ProProvider({ children }: { children: React.ReactNode }) {
-  const [isPro, setIsPro] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isPro, setIsPro] = useState(true); // Unlocked for testing
 
-  const checkPro = async () => {
-    try {
-      const { Purchases } = await import("@revenuecat/purchases-capacitor");
-      await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
-      const info = await Purchases.getCustomerInfo();
-      const active = info.customerInfo.entitlements.active;
-      setIsPro(!!active[PRO_ENTITLEMENT]);
-    } catch(e) {
-      console.log("RevenueCat error:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { checkPro(); }, []);
+  useEffect(() => {
+    // Check if already purchased
+    const stored = localStorage.getItem("morse_vibe_pro");
+    if (stored === "true") setIsPro(true);
+  }, []);
 
   const purchase = async () => {
     try {
-      const { Purchases } = await import("@revenuecat/purchases-capacitor");
-      const offerings = await Purchases.getOfferings();
-      const lifetime = offerings.current?.availablePackages.find(p => p.packageType === "LIFETIME");
-      if (!lifetime) { alert("Product not available"); return; }
-      const result = await Purchases.purchasePackage({ aPackage: lifetime });
-      const active = result.customerInfo.entitlements.active;
-      setIsPro(!!active[PRO_ENTITLEMENT]);
+      const result = await CapacitorBilling.purchase(PRODUCT_ID);
+      if (result.success) {
+        setIsPro(true);
+        localStorage.setItem("morse_vibe_pro", "true");
+        alert("Pro unlocked! Thank you!");
+      }
     } catch(e: any) {
-      if (!e.userCancelled) alert("Purchase failed: " + e.message);
+      alert("Purchase error: " + (e?.message || JSON.stringify(e)));
     }
   };
 
   const restore = async () => {
     try {
-      const { Purchases } = await import("@revenuecat/purchases-capacitor");
-      const info = await Purchases.restorePurchases();
-      const active = info.customerInfo.entitlements.active;
-      setIsPro(!!active[PRO_ENTITLEMENT]);
-      alert(active[PRO_ENTITLEMENT] ? "Pro restored!" : "No Pro purchase found");
+      const result = await CapacitorBilling.restore(PRODUCT_ID);
+      if (result.owned) {
+        setIsPro(true);
+        localStorage.setItem("morse_vibe_pro", "true");
+        alert("Pro restored!");
+      } else {
+        alert("No Pro purchase found.");
+      }
     } catch(e: any) {
-      alert("Restore failed: " + e.message);
+      alert("Restore error: " + (e?.message || JSON.stringify(e)));
     }
   };
 
   return (
-    <ProContext.Provider value={{ isPro, loading, purchase, restore }}>
+    <ProContext.Provider value={{ isPro, purchase, restore }}>
       {children}
     </ProContext.Provider>
   );
