@@ -43,7 +43,7 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
             .build();
 
         billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
-            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK || productDetailsList.isEmpty()) {
+            if (billingResult.getResponseCode() != BillingClient.BillingResponseCode.OK || productDetailsList == null || productDetailsList.isEmpty()) {
                 call.reject("Product not found: " + billingResult.getDebugMessage());
                 return;
             }

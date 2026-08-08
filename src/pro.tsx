@@ -16,7 +16,7 @@ const ProContext = createContext<ProContextType>({
 });
 
 export function ProProvider({ children }: { children: React.ReactNode }) {
-  const [isPro, setIsPro] = useState(true); // Unlocked for testing
+  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     // Check if already purchased
