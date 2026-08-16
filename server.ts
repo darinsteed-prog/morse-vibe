@@ -90,9 +90,8 @@ async function startServer() {
     const { lat, lon } = req.query;
     if (!lat || !lon) return res.status(400).json({ error: "lat and lon required" });
     const apis = [
-      `https://api.airplanes.live/v2/point/${lat}/${lon}/250`,
-      `https://api.adsb.one/v2/point/${lat}/${lon}/250`,
       `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/250`,
+      `https://api.adsb.one/v2/point/${lat}/${lon}/250`,
     ];
     for (const url of apis) {
       try {
