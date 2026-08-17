@@ -68,7 +68,7 @@ function ATCMode() {
     const clat=la??latRef.current, clon=lo??lonRef.current;
     setLoading(true); setError(null);
     try {
-      const { data } = await window.Capacitor.Plugins.CapacitorHttp.get({ url:'https://morse-vibe.onrender.com/api/flights?lat='+clat+'&lon='+clon+clat+'/'+clon+'/250' });
+      const { data } = await window.Capacitor.Plugins.CapacitorHttp.get({ url:'https://morse-vibe.onrender.com/api/flights?lat='+clat+'&lon='+clon });
       const parsed=(data.ac||[]).filter(a=>a.flight&&!a.gnd&&a.lat!=null&&a.lon!=null).map(a=>({ icao:a.hex, callsign:(a.flight||'').trim(), lat:a.lat, lon:a.lon, altitude:a.alt_baro!=null?Math.round(a.alt_baro*0.3048):null, velocity:a.gs!=null?Math.round(a.gs):null, heading:a.track!=null?Math.round(a.track):null, type:a.t||'', vrate:a.baro_rate!=null?Math.round(a.baro_rate):null, squawk:a.squawk||null }));
       setFlights(parsed); flightsRef.current=parsed; blipAlphaRef.current={}; sweepCountRef.current=0; lastSeenRef.current={}; parsed.forEach(f=>{ blipAlphaRef.current[f.icao]=-1; }); setLastUpdated(new Date().toLocaleTimeString());
     } catch(e){ setError(e.message); } finally { setLoading(false); }
