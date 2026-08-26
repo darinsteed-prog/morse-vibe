@@ -95,10 +95,10 @@ async function startServer() {
     ];
     for (const url of apis) {
       try {
-        const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
         if (!r.ok) continue;
         const data = await r.json();
-        if (data.ac && data.ac.length > 0) {
+        if (data.ac !== undefined) {
           res.json(data);
           return;
         }
