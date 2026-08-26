@@ -74,11 +74,11 @@ async function startServer() {
   });
 
   // ATC proxy endpoint
-  app.get("/api/atc", async (req, res) => {
+  app.get("/api/atc", async (req: express.Request, res: express.Response) => {
     try {
       const https = await import("https");
-      const data = await new Promise((resolve, reject) => {
-        const r = https.get("https://api.adsb.lol/v2/lat/53.3/lon/-6.3/dist/250", (response) => {
+      const data = await new Promise<any>((resolve, reject) => {
+        const r = https.get("https://api.adsb.lol/v2/lat/53.3/lon/-6.3/dist/250", (response: any) => {
           let body = "";
           response.on("data", (chunk) => body += chunk);
           response.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
@@ -92,20 +92,20 @@ async function startServer() {
   });
 
   // Flight data proxy
-  app.get("/api/flights", async (req, res) => {
+  app.get("/api/flights", async (req: express.Request, res: express.Response) => {
     const { lat, lon } = req.query;
     if (!lat || !lon) return res.status(400).json({ error: "lat and lon required" });
     const url = `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/250`;
     try {
       const https = await import("https");
-      const data = await new Promise((resolve, reject) => {
-        const req = https.get(url, (response) => {
+      const data = await new Promise<any>((resolve, reject) => {
+        const req2 = https.get(url, (response: any) => {
           let body = "";
           response.on("data", (chunk) => body += chunk);
           response.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
         });
-        req.on("error", reject);
-        req.setTimeout(10000, () => { req.destroy(); reject(new Error("timeout")); });
+        req2.on("error", reject);
+        req2.setTimeout(10000, () => { req2.destroy(); reject(new Error("timeout")); });
       });
       res.json(data);
     } catch(e: any) {
@@ -113,7 +113,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/webhook/:roomId", validateWebhookAuth, (req, res) => {
+  app.post("/api/webhook/:roomId", validateWebhookAuth, (req: express.Request, res: express.Response) => {
     const { roomId } = req.params;
     const { message } = req.body;
     const clientIp = req.ip || req.connection.remoteAddress || "unknown";
