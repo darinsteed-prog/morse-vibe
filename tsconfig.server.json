@@ -5,7 +5,9 @@
     "moduleResolution": "bundler",
     "outDir": "dist-server",
     "noEmit": false,
-    "allowImportingTsExtensions": false
+    "allowImportingTsExtensions": false,
+    "strict": false,
+    "noImplicitAny": false
   },
   "include": ["server.ts"]
 }
