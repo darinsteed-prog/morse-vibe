@@ -4,7 +4,6 @@
     "moduleResolution": "node",
     "outDir": "dist-server",
     "noEmit": false,
-    "allowImportingTsExtensions": false,
     "strict": false,
     "noImplicitAny": false,
     "esModuleInterop": true,
