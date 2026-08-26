@@ -45,11 +45,11 @@ async function startServer() {
   const rooms = new Map<string, Set<WebSocket>>();
   const wsRateLimiters = new WeakMap<WebSocket, RateLimiter>();
 
-  wss.on("connection", (ws) => {
+  wss.on("connection", (ws: any) => {
     let currentRoom: string | null = null;
     const limiter = new RateLimiter();
     wsRateLimiters.set(ws, limiter);
-    ws.on("message", (data) => {
+    ws.on("message", (data: any) => {
       if (!limiter.isAllowed("message")) { ws.send(JSON.stringify({ type: "error", error: "Too many messages." })); return; }
       try {
         const message = JSON.parse(data.toString());
@@ -80,7 +80,7 @@ async function startServer() {
       const data = await new Promise<any>((resolve, reject) => {
         const r = https.get("https://api.adsb.lol/v2/lat/53.3/lon/-6.3/dist/250", (response: any) => {
           let body = "";
-          response.on("data", (chunk) => body += chunk);
+          response.on("data", (chunk: any) => body += chunk);
           response.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
         });
         r.on("error", reject);
@@ -101,7 +101,7 @@ async function startServer() {
       const data = await new Promise<any>((resolve, reject) => {
         const req2 = https.get(url, (response: any) => {
           let body = "";
-          response.on("data", (chunk) => body += chunk);
+          response.on("data", (chunk: any) => body += chunk);
           response.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
         });
         req2.on("error", reject);
