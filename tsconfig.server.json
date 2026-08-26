@@ -1,13 +1,15 @@
-{
-  "extends": "./tsconfig.json",
+﻿{
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "CommonJS",
+    "moduleResolution": "node",
     "outDir": "dist-server",
     "noEmit": false,
     "allowImportingTsExtensions": false,
     "strict": false,
-    "noImplicitAny": false
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "target": "ES2020",
+    "skipLibCheck": true
   },
   "include": ["server.ts"]
 }
