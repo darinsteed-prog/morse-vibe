@@ -74,6 +74,11 @@ async function startServer() {
     ws.on("close", () => { if (currentRoom) { rooms.get(currentRoom)?.delete(ws); if (rooms.get(currentRoom)?.size === 0) rooms.delete(currentRoom); } });
   });
 
+  // Simple test endpoint
+  app.get("/api/test", (req: express.Request, res: express.Response) => {
+    res.json({ ok: true, time: Date.now() });
+  });
+
   // ATC proxy endpoint
   app.get("/api/atc", async (req: express.Request, res: express.Response) => {
     try {
@@ -104,8 +109,8 @@ async function startServer() {
           response.on("data", (chunk: any) => body += chunk);
           response.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
         });
-        req2.on("error", reject);
-        req2.setTimeout(10000, () => { req2.destroy(); reject(new Error("timeout")); });
+        req2.on("error", (e) => { console.log("[flights] https error:", e.message); reject(e); });
+        req2.setTimeout(8000, () => { console.log("[flights] timeout!"); req2.destroy(); reject(new Error("timeout")); });
       });
       res.json(data);
     } catch(e: any) {
