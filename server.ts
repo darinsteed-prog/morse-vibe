@@ -82,14 +82,8 @@ async function startServer() {
   // ATC proxy endpoint
   app.get("/api/atc", async (req: express.Request, res: express.Response) => {
     try {
-      const data = await new Promise<any>((resolve, reject) => {
-        const r = https.get("https://api.adsb.lol/v2/lat/53.3/lon/-6.3/dist/250", (response: any) => {
-          let body = "";
-          response.on("data", (chunk: any) => body += chunk);
-          response.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
-        });
-        r.on("error", reject);
-      });
+      const response = await fetch("https://api.adsb.lol/v2/lat/53.3/lon/-6.3/dist/250");
+      const data = await response.json();
       res.json(data);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
