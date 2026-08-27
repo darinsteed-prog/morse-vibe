@@ -1,6 +1,7 @@
 ﻿{
   "compilerOptions": {
-    "module": "CommonJS",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "outDir": "dist-server",
     "noEmit": false,
     "strict": false,
