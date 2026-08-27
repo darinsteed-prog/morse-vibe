@@ -91,24 +91,21 @@ async function startServer() {
   });
 
   // Flight data proxy
-  app.get("/api/flights", async (req: express.Request, res: express.Response) => {
-    console.log("[flights] Request received lat=" + req.query.lat + " lon=" + req.query.lon);
-    const { lat, lon } = req.query;
-    if (!lat || !lon) return res.status(400).json({ error: "lat and lon required" });
-    const url = `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/250`;
+  app.get("/api/flights", async (req: any, res: any) => {
     try {
-      const data = await new Promise<any>((resolve, reject) => {
-        const req2 = https.get(url, (response: any) => {
-          let body = "";
-          response.on("data", (chunk: any) => body += chunk);
-          response.on("end", () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
-        });
-        req2.on("error", (e) => { console.log("[flights] https error:", e.message); reject(e); });
-        req2.setTimeout(8000, () => { console.log("[flights] timeout!"); req2.destroy(); reject(new Error("timeout")); });
-      });
-      res.json(data);
-    } catch(e: any) {
-      res.status(500).json({ error: e.message });
+      const lat = req.query.lat || "53.3";
+      const lon = req.query.lon || "-6.3";
+      console.log("[flights] fetching for lat=" + lat + " lon=" + lon);
+      const url = "https://api.adsb.lol/v2/lat/" + lat + "/lon/" + lon + "/dist/250";
+      const r = await fetch(url);
+      console.log("[flights] status=" + r.status);
+      const body = await r.text();
+      console.log("[flights] body length=" + body.length);
+      res.setHeader("Content-Type", "application/json");
+      res.send(body);
+    } catch(err: any) {
+      console.log("[flights] CATCH:", err.message);
+      res.status(500).json({ error: err.message });
     }
   });
 
