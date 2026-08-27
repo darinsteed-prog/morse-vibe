@@ -93,6 +93,7 @@ async function startServer() {
 
   // Flight data proxy
   app.get("/api/flights", async (req: express.Request, res: express.Response) => {
+    console.log("[flights] Request received lat=" + req.query.lat + " lon=" + req.query.lon);
     const { lat, lon } = req.query;
     if (!lat || !lon) return res.status(400).json({ error: "lat and lon required" });
     const url = `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/250`;
