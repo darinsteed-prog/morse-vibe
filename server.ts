@@ -1,4 +1,5 @@
 ﻿import express from "express";
+import * as https from "https";
 import { createServer as createViteServer } from "vite";
 import { WebSocketServer, WebSocket } from "ws";
 import { createServer } from "http";
@@ -76,7 +77,6 @@ async function startServer() {
   // ATC proxy endpoint
   app.get("/api/atc", async (req: express.Request, res: express.Response) => {
     try {
-      const https = await import("https");
       const data = await new Promise<any>((resolve, reject) => {
         const r = https.get("https://api.adsb.lol/v2/lat/53.3/lon/-6.3/dist/250", (response: any) => {
           let body = "";
@@ -98,7 +98,6 @@ async function startServer() {
     if (!lat || !lon) return res.status(400).json({ error: "lat and lon required" });
     const url = `https://api.adsb.lol/v2/lat/${lat}/lon/${lon}/dist/250`;
     try {
-      const https = await import("https");
       const data = await new Promise<any>((resolve, reject) => {
         const req2 = https.get(url, (response: any) => {
           let body = "";
