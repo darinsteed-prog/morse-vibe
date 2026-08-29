@@ -97,7 +97,7 @@ async function startServer() {
       const lon = req.query.lon || "-6.3";
       console.log("[flights] fetching for lat=" + lat + " lon=" + lon);
       const url = "https://api.adsb.lol/v2/lat/" + lat + "/lon/" + lon + "/dist/250";
-      const r = await fetch(url);
+      const r = await fetch(url, { headers: { "User-Agent": "MorseVibe/2.0 (contact: faithalarmapp@gmail.com)" } });
       console.log("[flights] status=" + r.status);
       const body = await r.text();
       console.log("[flights] body length=" + body.length);
